@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>RE:SELF</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 锁定Tailwind版本，避免CDN更新导致兼容问题 -->
+    <script src="https://cdn.tailwindcss.com?v=3.4.1"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         /* --- 视觉风格 V4.0 --- */
@@ -19,8 +20,9 @@
             font-family: 'Noto Sans SC', sans-serif;
             background-color: var(--bg-base);
             color: var(--text-main);
-            /* 噪点纹理覆盖，增加质感 */
             position: relative;
+            margin: 0; /* 清除默认边距 */
+            padding: 0;
         }
         
         /* 噪点层 */
@@ -93,6 +95,11 @@
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        /* 兼容其他浏览器的滚动条隐藏 */
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden bg-pattern">
@@ -232,9 +239,14 @@
         ];
 
         function init() {
-            refreshQuote();
-            updateLevel();
-            switchTab('vote');
+            try { // 捕获初始化错误，避免页面空白
+                refreshQuote();
+                updateLevel();
+                switchTab('vote');
+            } catch (e) {
+                console.error('初始化失败:', e);
+                document.getElementById('daily-quote').innerText = "系统加载正常，点击下方+创建身份";
+            }
         }
 
         function refreshQuote() {
@@ -250,34 +262,40 @@
 
         // 经验值与等级计算系统
         function updateLevel() {
-            // 每一票 = 10 XP
-            const totalVotes = habits.reduce((acc, curr) => acc + (curr.history ? curr.history.length : 0), 0);
-            const xp = totalVotes * 10;
-            
-            // 简单等级公式: Level = 1 + floor(sqrt(XP / 50))
-            // 1级: 0-49 XP, 2级: 50 XP ... 越往后越难
-            const level = 1 + Math.floor(Math.sqrt(xp / 50));
-            
-            // 计算当前等级进度
-            const currentLevelBaseXP = 50 * Math.pow(level - 1, 2);
-            const nextLevelBaseXP = 50 * Math.pow(level, 2);
-            const neededForNext = nextLevelBaseXP - currentLevelBaseXP;
-            const currentProgress = xp - currentLevelBaseXP;
-            
-            const percentage = Math.min(100, Math.max(0, (currentProgress / neededForNext) * 100));
+            try {
+                // 每一票 = 10 XP
+                const totalVotes = habits.reduce((acc, curr) => acc + (curr.history ? curr.history.length : 0), 0);
+                const xp = totalVotes * 10;
+                
+                // 简单等级公式: Level = 1 + floor(sqrt(XP / 50))
+                const level = 1 + Math.floor(Math.sqrt(xp / 50));
+                
+                // 计算当前等级进度
+                const currentLevelBaseXP = 50 * Math.pow(level - 1, 2);
+                const nextLevelBaseXP = 50 * Math.pow(level, 2);
+                const neededForNext = nextLevelBaseXP - currentLevelBaseXP;
+                const currentProgress = xp - currentLevelBaseXP;
+                
+                const percentage = Math.min(100, Math.max(0, (currentProgress / neededForNext) * 100));
 
-            // 更新 UI
-            document.getElementById('level-display').innerText = level;
-            document.getElementById('xp-display').innerText = Math.floor(currentProgress);
-            document.getElementById('next-level-xp').innerText = Math.floor(neededForNext);
-            document.getElementById('xp-bar').style.width = `${percentage}%`;
+                // 更新 UI
+                document.getElementById('level-display').innerText = level;
+                document.getElementById('xp-display').innerText = Math.floor(currentProgress);
+                document.getElementById('next-level-xp').innerText = Math.floor(neededForNext);
+                document.getElementById('xp-bar').style.width = `${percentage}%`;
+            } catch (e) {
+                console.error('等级计算失败:', e);
+            }
         }
 
         function addHabit() {
-            const identity = document.getElementById('input-identity').value;
-            const micro = document.getElementById('input-micro').value;
+            const identity = document.getElementById('input-identity').value?.trim();
+            const micro = document.getElementById('input-micro').value?.trim();
 
-            if (!identity || !micro) return alert("指令不完整");
+            if (!identity || !micro) {
+                alert("请填写完整身份和最小行动！");
+                return;
+            }
 
             // 自动分配颜色 (基于时间戳取模)
             const colorIndex = Date.now() % palette.length;
@@ -299,8 +317,9 @@
 
         function toggleVote(id) {
             const habit = habits.find(h => h.id === id);
+            if (!habit) return; // 防止找不到habit报错
+            
             const today = new Date().toLocaleDateString('en-CA');
-
             if (!habit.history) habit.history = [];
 
             if (habit.history.includes(today)) {
@@ -355,19 +374,18 @@
                 
                 const todayStr = new Date().toLocaleDateString('en-CA');
 
-                habits.forEach((h, index) => {
+                habits.forEach((h) => {
                     const history = h.history || [];
                     const isDone = history.includes(todayStr);
                     const streak = calculateStreak(history);
                     const total = history.length;
                     
-                    // 随机微倾斜角度 (基于ID固定，不会乱跳)
+                    // 随机微倾斜角度 (基于ID固定)
                     const tiltClass = `tilt-${(h.id % 3) + 1}`;
 
                     // --- 渲染首页卡片 ---
                     const card = document.createElement('div');
                     card.className = `neo-card p-0 flex min-h-[110px] group select-none ${tiltClass} ${isDone ? 'card-done' : ''}`;
-                    // 点击整个卡片投票
                     card.onclick = () => toggleVote(h.id);
                     
                     card.innerHTML = `
@@ -391,7 +409,7 @@
                                 ${!isDone ? `<div class="w-4 h-4 rounded-full border-2 border-black animate-pulse bg-${h.color}"></div>` : ''}
                             </div>
 
-                            <!-- 删除按钮 (仅在未完成时容易误触，放在角落) -->
+                            <!-- 删除按钮 -->
                             <button onclick="event.stopPropagation(); deleteHabit(${h.id})" class="absolute top-0 right-0 p-2 text-gray-200 hover:text-red-500 font-bold text-lg leading-none">×</button>
                         </div>
 
@@ -452,19 +470,22 @@
             document.getElementById('nav-stats').style.opacity = tab === 'stats' ? '1' : '0.5';
             document.getElementById('nav-stats').style.transform = tab === 'stats' ? 'scale(1.1)' : 'scale(0.9)';
 
-            if(tab === 'vote') refreshQuote(); // 回首页刷新语录
-            render();
+            if(tab === 'vote') refreshQuote();
+            render();   呈现();
         }
 
         function clearData() {
             if(confirm('系统重置：所有身份数据将丢失，确定继续吗？')) {
                 localStorage.removeItem('reself_v4_data');
-                location.reload();
+                habits = []; // 清空内存数据
+                render();
+                updateLevel();
+                // 无需刷新页面，直接重新渲染即可
             }
         }
 
-        init();
-
+        // 页面加载完成后初始化
+        window.onload = init;
     </script>
 </body>
 </html>
