@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RE:SELF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- 视觉风格 V4.0 --- */
+        :root {
+            --bg-base: #e8e8e3;
+            --text-main: #111;
+            --shadow-hard: 5px;
+            --border-thick: 2.5px;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            /* 噪点纹理覆盖，增加质感 */
+            position: relative;
+        }
+        
+        /* 噪点层 */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* 动态背景图案 */
+        .bg-pattern {
+            background-image: radial-gradient(#aaa 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        /* 硬朗卡片风格 */
+        .neo-card {
+            background: white;
+            border: var(--border-thick) solid black;
+            box-shadow: var(--shadow-hard) var(--shadow-hard) 0px 0px rgba(0,0,0,1);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 随机倾斜效果类 (由JS动态添加) */
+        .tilt-1 { transform: rotate(-1deg); }
+        .tilt-2 { transform: rotate(1deg); }
+        .tilt-3 { transform: rotate(-0.5deg); }
+
+        .neo-card:active {
+            transform: translate(2px, 2px) rotate(0deg) !important;
+            box-shadow: 2px 2px 0px 0px black;
+        }
+
+        /* 完成状态 */
+        .card-done {
+            opacity: 0.9;
+            filter: grayscale(0.2);
+            background-color: #f4f4f4;
+            transform: scale(0.98) rotate(0deg) !important;
+            box-shadow: 1px 1px 0px 0px black !important;
+        }
+
+        /* 进度条动画 */
+        .progress-fill {
+            transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* 盖章动画 */
+        @keyframes stamp-drop {
+            0% { transform: scale(3) rotate(-30deg); opacity: 0; }
+            40% { transform: scale(0.9) rotate(5deg); opacity: 1; }
+            60% { transform: scale(1.05) rotate(-3deg); }
+            100% { transform: scale(1) rotate(-8deg); }
+        }
+        .stamp-mark {
+            animation: stamp-drop 0.4s ease-out forwards;
+            mix-blend-mode: multiply;
+        }
+
+        /* 底部导航浮动 */
+        .float-nav {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.85);
+            border-top: 2px solid black;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-pattern">
+
+    <!-- 顶部数据看板 -->
+    <header class="px-5 pt-8 pb-4 z-10 flex flex-col gap-4 bg-white border-b-2 border-black">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-3xl font-black italic tracking-tighter text-black" style="text-shadow: 2px 2px 0px #ddd;">RE:SELF</h1>
+                <p id="daily-quote" class="text-xs font-bold text-gray-500 mt-1 max-w-[200px] leading-tight">载入中...</p>
+            </div>
+            
+            <!-- 等级徽章 -->
+            <div class="flex flex-col items-end">
+                <div class="bg-black text-white px-3 py-1 font-black text-xl transform -rotate-2 border-2 border-transparent shadow-[3px_3px_0px_0px_#888]">
+                    LV.<span id="level-display">1</span>
+                </div>
+                <div class="text-[10px] font-bold mt-2 text-right">
+                    XP: <span id="xp-display">0</span> / <span id="next-level-xp">10</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 全局经验条 -->
+        <div class="w-full h-3 border-2 border-black rounded-full overflow-hidden bg-gray-100">
+            <div id="xp-bar" class="h-full bg-yellow-400 border-r-2 border-black progress-fill" style="width: 0%"></div>
+        </div>
+    </header>
+
+    <!-- 主视窗 -->
+    <main id="app-content" class="flex-1 overflow-y-auto p-4 pb-32 no-scrollbar">
+        
+        <!-- 页面 1: 投票现场 -->
+        <div id="page-vote">
+            <!-- 列表 -->
+            <div id="habit-list" class="space-y-6 mt-2">
+                <!-- 卡片渲染区 -->
+            </div>
+            
+            <!-- 空状态插画 -->
+            <div id="empty-state" class="hidden flex flex-col items-center justify-center mt-20 opacity-40 select-none">
+                <div class="grid grid-cols-3 gap-1 mb-4">
+                    <div class="w-4 h-4 bg-black"></div><div class="w-4 h-4 bg-black"></div><div class="w-4 h-4 bg-transparent"></div>
+                    <div class="w-4 h-4 bg-black"></div><div class="w-4 h-4 bg-transparent"></div><div class="w-4 h-4 bg-black"></div>
+                    <div class="w-4 h-4 bg-black"></div><div class="w-4 h-4 bg-transparent"></div><div class="w-4 h-4 bg-transparent"></div>
+                </div>
+                <p class="font-bold tracking-widest text-lg">SYSTEM OFFLINE</p>
+                <p class="text-xs mt-1 border-b border-black">Initialize first protocol</p>
+            </div>
+        </div>
+
+        <!-- 页面 2: 蓝图 (极简输入) -->
+        <div id="page-add" class="hidden">
+            <div class="neo-card p-6 flex flex-col gap-6 rotate-1 max-w-sm mx-auto mt-4">
+                <h2 class="text-xl font-black uppercase border-b-4 border-black inline-block self-start pb-1">Create Protocol</h2>
+                
+                <div>
+                    <label class="text-xs font-bold bg-black text-white px-1">NEW IDENTITY</label>
+                    <input type="text" id="input-identity" placeholder="想成为谁？ (如: 极客)" 
+                           class="w-full mt-2 p-3 border-2 border-black font-bold text-lg focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-all bg-yellow-50">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold bg-black text-white px-1">MICRO ACTION</label>
+                    <input type="text" id="input-micro" placeholder="最小行动 (如: 写一行代码)" 
+                           class="w-full mt-2 p-3 border-2 border-black font-bold text-lg focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-all bg-blue-50">
+                </div>
+
+                <div class="text-xs text-gray-500 font-bold border-l-2 border-gray-300 pl-2">
+                    * 系统将自动为你分配专属识别色。<br>
+                    * 过程习惯将根据最小行动自动生成。
+                </div>
+
+                <button onclick="addHabit()" class="bg-black text-white py-4 font-black text-xl hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_#444] border-2 border-black transition-all mt-2">
+                    INIT >
+                </button>
+            </div>
+        </div>
+
+        <!-- 页面 3: 档案馆 (数据) -->
+        <div id="page-stats" class="hidden space-y-5">
+            <div class="text-sm font-bold bg-white border border-black inline-block px-2 py-1 shadow-[2px_2px_0px_0px_black]">我的身份矩阵</div>
+            <div id="stats-container" class="grid grid-cols-1 gap-4">
+                <!-- 统计卡片 -->
+            </div>
+            
+            <div class="mt-8 pt-6 border-t-2 border-dashed border-gray-300 text-center">
+                 <button onclick="clearData()" class="text-xs font-bold text-red-400 uppercase tracking-widest hover:text-red-600">⚠ Factory Reset</button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 底部悬浮导航 -->
+    <nav class="fixed bottom-0 left-0 w-full h-20 float-nav flex justify-around items-center px-6 z-40 pb-2">
+        <button onclick="switchTab('vote')" id="nav-vote" class="flex flex-col items-center opacity-50 transition-all scale-90">
+            <span class="text-2xl mb-1">⚡</span>
+            <span class="text-[10px] font-bold tracking-widest">执行</span>
+        </button>
+        
+        <!-- 中间突出的添加按钮 -->
+        <button onclick="switchTab('add')" id="nav-add" class="bg-black text-white w-14 h-14 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.2)] flex items-center justify-center transform -translate-y-4 active:scale-95 transition-all">
+            <span class="text-3xl font-light pb-1">+</span>
+        </button>
+        
+        <button onclick="switchTab('stats')" id="nav-stats" class="flex flex-col items-center opacity-50 transition-all scale-90">
+            <span class="text-2xl mb-1">💾</span>
+            <span class="text-[10px] font-bold tracking-widest">档案</span>
+        </button>
+    </nav>
+
+    <script>
+        // --- 核心逻辑 V4.0 ---
+        
+        let habits = JSON.parse(localStorage.getItem('reself_v4_data')) || [];
+        
+        // 自动配色池 (高饱和度，更有活力)
+        const palette = [
+            '#FF6B6B', // 珊瑚红
+            '#4ECDC4', // 青松绿
+            '#FFE66D', // 柠檬黄
+            '#FF9F43', // 活力橙
+            '#54A0FF', // 电光蓝
+            '#A29BFE', // 梦幻紫
+            '#00D2D3'  // 亮青色
+        ];
+
+        // 随机语录库
+        const quotes = [
+            "每一次行动，都是对新身份的一张选票。",
+            "你不是你的过去，你是你重复做的事。",
+            "微小的进步，复利的力量。",
+            "烂开始好过不开始。",
+            "身份是动词，不是名词。",
+            "专注于系统，而非结果。",
+            "今天，你确认了你是谁吗？"
+        ];
+
+        function init() {
+            refreshQuote();
+            updateLevel();
+            switchTab('vote');
+        }
+
+        function refreshQuote() {
+            const randomQ = quotes[Math.floor(Math.random() * quotes.length)];
+            document.getElementById('daily-quote').innerText = `“${randomQ}”`;
+        }
+
+        function saveData() {
+            localStorage.setItem('reself_v4_data', JSON.stringify(habits));
+            render();
+            updateLevel();
+        }
+
+        // 经验值与等级计算系统
+        function updateLevel() {
+            // 每一票 = 10 XP
+            const totalVotes = habits.reduce((acc, curr) => acc + (curr.history ? curr.history.length : 0), 0);
+            const xp = totalVotes * 10;
+            
+            // 简单等级公式: Level = 1 + floor(sqrt(XP / 50))
+            // 1级: 0-49 XP, 2级: 50 XP ... 越往后越难
+            const level = 1 + Math.floor(Math.sqrt(xp / 50));
+            
+            // 计算当前等级进度
+            const currentLevelBaseXP = 50 * Math.pow(level - 1, 2);
+            const nextLevelBaseXP = 50 * Math.pow(level, 2);
+            const neededForNext = nextLevelBaseXP - currentLevelBaseXP;
+            const currentProgress = xp - currentLevelBaseXP;
+            
+            const percentage = Math.min(100, Math.max(0, (currentProgress / neededForNext) * 100));
+
+            // 更新 UI
+            document.getElementById('level-display').innerText = level;
+            document.getElementById('xp-display').innerText = Math.floor(currentProgress);
+            document.getElementById('next-level-xp').innerText = Math.floor(neededForNext);
+            document.getElementById('xp-bar').style.width = `${percentage}%`;
+        }
+
+        function addHabit() {
+            const identity = document.getElementById('input-identity').value;
+            const micro = document.getElementById('input-micro').value;
+
+            if (!identity || !micro) return alert("指令不完整");
+
+            // 自动分配颜色 (基于时间戳取模)
+            const colorIndex = Date.now() % palette.length;
+            
+            habits.push({
+                id: Date.now(),
+                identity: identity,
+                habit: `成为${identity}`, // 自动填充
+                micro: micro,
+                color: palette[colorIndex],
+                history: []
+            });
+
+            document.getElementById('input-identity').value = '';
+            document.getElementById('input-micro').value = '';
+            switchTab('vote');
+            saveData();
+        }
+
+        function toggleVote(id) {
+            const habit = habits.find(h => h.id === id);
+            const today = new Date().toLocaleDateString('en-CA');
+
+            if (!habit.history) habit.history = [];
+
+            if (habit.history.includes(today)) {
+                habit.history = habit.history.filter(date => date !== today);
+            } else {
+                habit.history.push(today);
+                if (navigator.vibrate) navigator.vibrate([10, 30]); 
+            }
+            saveData();
+        }
+
+        function deleteHabit(id) {
+            if(confirm('删除此身份协议？')) {
+                habits = habits.filter(h => h.id !== id);
+                saveData();
+            }
+        }
+
+        function calculateStreak(history) {
+            if (!history || history.length === 0) return 0;
+            const sorted = [...history].sort().reverse();
+            let streak = 0;
+            let currentCheck = new Date();
+            
+            const todayStr = currentCheck.toLocaleDateString('en-CA');
+            if (!sorted.includes(todayStr)) currentCheck.setDate(currentCheck.getDate() - 1);
+
+            while (true) {
+                const dateStr = currentCheck.toLocaleDateString('en-CA');
+                if (sorted.includes(dateStr)) {
+                    streak++;
+                    currentCheck.setDate(currentCheck.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        function render() {
+            const list = document.getElementById('habit-list');
+            const empty = document.getElementById('empty-state');
+            const stats = document.getElementById('stats-container');
+            
+            list.innerHTML = '';
+            stats.innerHTML = '';
+
+            if (habits.length === 0) {
+                empty.classList.remove('hidden');
+            } else {
+                empty.classList.add('hidden');
+                
+                const todayStr = new Date().toLocaleDateString('en-CA');
+
+                habits.forEach((h, index) => {
+                    const history = h.history || [];
+                    const isDone = history.includes(todayStr);
+                    const streak = calculateStreak(history);
+                    const total = history.length;
+                    
+                    // 随机微倾斜角度 (基于ID固定，不会乱跳)
+                    const tiltClass = `tilt-${(h.id % 3) + 1}`;
+
+                    // --- 渲染首页卡片 ---
+                    const card = document.createElement('div');
+                    card.className = `neo-card p-0 flex min-h-[110px] group select-none ${tiltClass} ${isDone ? 'card-done' : ''}`;
+                    // 点击整个卡片投票
+                    card.onclick = () => toggleVote(h.id);
+                    
+                    card.innerHTML = `
+                        <!-- 左侧色条 -->
+                        <div class="w-3 border-r-2 border-black" style="background-color: ${h.color}"></div>
+                        
+                        <!-- 内容 -->
+                        <div class="flex-1 p-4 flex flex-col justify-between relative">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Identity Protocol</span>
+                                    ${streak > 1 ? `<span class="text-[10px] font-bold bg-yellow-300 border border-black px-1">🔥 ${streak} 天连胜</span>` : ''}
+                                </div>
+                                <h3 class="text-xl font-black mt-1 leading-tight">${h.micro}</h3>
+                                <p class="text-xs font-bold text-gray-400 mt-1">我是${h.identity}</p>
+                            </div>
+
+                            <!-- 底部信息 -->
+                            <div class="flex justify-between items-end mt-3">
+                                <div class="text-[10px] font-mono text-gray-400">Total XP: ${total * 10}</div>
+                                ${!isDone ? `<div class="w-4 h-4 rounded-full border-2 border-black animate-pulse bg-${h.color}"></div>` : ''}
+                            </div>
+
+                            <!-- 删除按钮 (仅在未完成时容易误触，放在角落) -->
+                            <button onclick="event.stopPropagation(); deleteHabit(${h.id})" class="absolute top-0 right-0 p-2 text-gray-200 hover:text-red-500 font-bold text-lg leading-none">×</button>
+                        </div>
+
+                        <!-- 盖章效果 -->
+                        ${isDone ? `
+                            <div class="absolute right-2 top-1/2 transform -translate-y-1/2 stamp-mark pointer-events-none">
+                                <div class="border-4 border-black w-20 h-20 rounded-full flex items-center justify-center opacity-20">
+                                    <div class="border-2 border-black w-16 h-16 rounded-full"></div>
+                                </div>
+                                <div class="absolute inset-0 flex items-center justify-center text-red-600 font-black text-xl tracking-widest rotate-[-15deg]" style="text-shadow: 1px 1px 0px rgba(255,0,0,0.2);">
+                                    DONE
+                                </div>
+                            </div>
+                        ` : ''}
+                    `;
+                    list.appendChild(card);
+
+
+                    // --- 渲染统计卡片 ---
+                    const statItem = document.createElement('div');
+                    statItem.className = "neo-card p-4";
+                    
+                    // 生成热力点
+                    let heatHTML = '<div class="flex flex-wrap gap-1 justify-end mt-2">';
+                    for (let i = 13; i >= 0; i--) {
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
+                        const dStr = d.toLocaleDateString('en-CA');
+                        const hit = history.includes(dStr);
+                        heatHTML += `<div class="w-3 h-3 border border-black ${hit ? '' : 'bg-gray-100'}" style="background-color: ${hit ? h.color : ''}"></div>`;
+                    }
+                    heatHTML += '</div>';
+
+                    statItem.innerHTML = `
+                        <div class="flex justify-between items-center border-b-2 border-black pb-2 mb-2">
+                            <span class="font-black text-lg border-l-4 border-black pl-2" style="border-color:${h.color}">${h.identity}</span>
+                            <span class="font-mono text-xs font-bold bg-black text-white px-1">LV.${Math.floor(total/10) + 1}</span>
+                        </div>
+                        <div class="flex justify-between text-xs font-bold text-gray-500">
+                            <span>投入: ${total} 票</span>
+                            <span>最近14天表现:</span>
+                        </div>
+                        ${heatHTML}
+                    `;
+                    stats.appendChild(statItem);
+                });
+            }
+        }
+
+        function switchTab(tab) {
+            ['vote', 'add', 'stats'].forEach(t => document.getElementById(`page-${t}`).classList.add('hidden'));
+            document.getElementById(`page-${tab}`).classList.remove('hidden');
+            
+            // 导航栏状态切换
+            document.getElementById('nav-vote').style.opacity = tab === 'vote' ? '1' : '0.5';
+            document.getElementById('nav-vote').style.transform = tab === 'vote' ? 'scale(1.1)' : 'scale(0.9)';
+            
+            document.getElementById('nav-stats').style.opacity = tab === 'stats' ? '1' : '0.5';
+            document.getElementById('nav-stats').style.transform = tab === 'stats' ? 'scale(1.1)' : 'scale(0.9)';
+
+            if(tab === 'vote') refreshQuote(); // 回首页刷新语录
+            render();
+        }
+
+        function clearData() {
+            if(confirm('系统重置：所有身份数据将丢失，确定继续吗？')) {
+                localStorage.removeItem('reself_v4_data');
+                location.reload();
+            }
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
