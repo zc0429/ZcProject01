@@ -1,64 +1,64 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026元旦快乐 - 林瑞依</title>
-    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <style>
-        :root {
+<html   超文本标记语言 lang   朗   朗="zh-CN"   “应用”>
+<head   头>
+    <meta   元 charset   字符集   字符集="UTF-8"   “utf - 8”>
+    <meta   元 name   名字   名字="viewport"   “视口” content   内容   内容="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"“width   “宽=device-width,   设备宽度, initial-scale   初始   初始=1.0, maximum-scale   最大范围=1.0, user-scalable=no”   不”>
+    <title   标题>2026元旦快乐</title   标题>
+    <link   链接 href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap"   显示=交换” rel="stylesheet"   “样式表”>
+    <script   脚本 src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script   脚本>
+       < >风格<style      风格风格>
+        :   :根{root    根{
             --primary-pink: #ffafbd;
             --primary-orange: #ffc3a0;
             --glass-bg: rgba(255, 255, 255, 0.25);
             --glass-border: rgba(255, 255, 255, 0.5);
-            --text-color: #6a4c4c;
+            --text-color   颜色: #6a4c4c;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { margin   保证金: 0; padding   填充: 0; box-sizing: border-box; -webkit-tap-highlight-color   颜色: transparent; }
 
-        body {
-            background: linear-gradient(135deg, var(--primary-pink) 0%, var(--primary-orange) 100%);
-            font-family: 'ZCOOL KuaiLe', cursive, sans-serif;
-            color: var(--text-color);
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            cursor: pointer;
+           身体{body       身体身体{
+            background   背景: linear-gradient   梯度(135deg, var(--primary-pink) 0%, var(--primary-orange) 100%);
+            font-family   家庭: 'ZCOOL KuaiLe'，草书，无衬线；font-family   家庭: 'ZCOOL KuaiLe', cursive, sans-serif   衬线;
+            颜色:var(——文本颜色);color   颜色: var(--text-color   颜色);
+            height   高度: 100vh;
+            width   宽度: 100vw;
+               溢出:隐藏;overflow: hidden;
+               显示:flex;display: flex;
+               justify-content   内容:中心;justify-content   内容: center;
+               对齐项目:中心;align-items: center;
+               位置:相对;position   位置: relative   相对;
+               光标:指针;cursor: pointer;
         }
 
         /* 背景装饰层 */
         .decor-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 0;
-            overflow: hidden;
+               位置:绝对的;position   位置: absolute;
+            top   前: 0; left   左: 0; width   宽度: 100%; height   高度: 100%;上图:0;左:0;宽度:100%;高度:100%;
+            pointer-events   事件: none   没有一个;   pointer-events   事件:没有;
+            z-index   指数: 0;
+            overflow: hidden;   溢出:隐藏;
         }
 
         .floating-item {
-            position: absolute;
-            font-size: 1.5rem;
+            position   位置: absolute;
+            font-size   大小: 1.5rem;
             opacity: 0.7;
-            will-change: transform;
+            will-change: transform   变换;
             transition: transform 0.1s linear;
         }
 
         /* 核心内容卡片：更小巧精致 */
-        .main-card {
-            position: relative;
-            z-index: 10;
-            background: var(--glass-bg);
+        .main-card   卡 {
+            position   位置: relative   相对;   位置:相对;
+            z-index   指数: 10;
+            background   背景: var(--glass-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             /* 缩小尺寸 */
-            padding: 30px 20px; 
-            width: 420px;
-            max-width: 85%;
+            padding   填充: 30px 20px; 
+            width   宽度: 420px;
+            max-width   宽度: 85%;
             
             border-radius: 25px;
             border: 2px solid var(--glass-border);
@@ -233,4 +233,5 @@
         }, 500);
     </script>
 </body>
+
 </html>
