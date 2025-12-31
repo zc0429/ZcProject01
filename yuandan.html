@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026元旦快乐</title>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary-pink: #ffafbd;
+            --primary-orange: #ffc3a0;
+            --glass-bg: rgba(255, 255, 255, 0.25);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --text-color: #6a4c4c;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: linear-gradient(135deg, var(--primary-pink) 0%, var(--primary-orange) 100%);
+            font-family: 'ZCOOL KuaiLe', cursive, sans-serif;
+            color: var(--text-color);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* 背景装饰层 */
+        .decor-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .floating-item {
+            position: absolute;
+            font-size: 1.5rem;
+            opacity: 0.7;
+            will-change: transform;
+            transition: transform 0.1s linear;
+        }
+
+        /* 核心内容卡片：更小巧精致 */
+        .main-card {
+            position: relative;
+            z-index: 10;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            /* 缩小尺寸 */
+            padding: 30px 20px; 
+            width: 420px;
+            max-width: 85%;
+            
+            border-radius: 25px;
+            border: 2px solid var(--glass-border);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .main-card:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            font-size: 2.2rem; /* 字体稍微调小以适配更小的卡片 */
+            color: #fff;
+            text-shadow: 2px 2px 0px #ff9a9e;
+            margin-bottom: 25px;
+            line-height: 1.4;
+            letter-spacing: 1px;
+        }
+
+        /* 倒计时容器 */
+        .countdown-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 12px; /* 间距微调 */
+        }
+
+        .time-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .time-box .num {
+            font-size: 1.8rem; /* 数字调小 */
+            background: #fff;
+            color: var(--text-color);
+            width: 55px; /* 盒子调小 */
+            height: 55px;
+            line-height: 55px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            font-weight: bold;
+        }
+
+        .time-box .label {
+            margin-top: 6px;
+            font-size: 0.85rem;
+            color: white;
+        }
+
+        @keyframes floatAnim {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 1.8rem; }
+            .countdown-wrapper { gap: 8px; }
+            .time-box .num { width: 45px; height: 45px; line-height: 45px; font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="decor-layer" id="decorLayer"></div>
+
+    <main class="main-card" id="card">
+        <!-- 左右添加了 emoji -->
+        <h1>🦄 林瑞依 🌈<br>2026元旦快乐 </h1>
+        
+        <div class="countdown-wrapper">
+            <div class="time-box">
+                <span class="num" id="days">00</span>
+                <span class="label">天</span>
+            </div>
+            <div class="time-box">
+                <span class="num" id="hours">00</span>
+                <span class="label">时</span>
+            </div>
+            <div class="time-box">
+                <span class="num" id="minutes">00</span>
+                <span class="label">分</span>
+            </div>
+            <div class="time-box">
+                <span class="num" id="seconds">00</span>
+                <span class="label">秒</span>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 1. 倒计时
+        function updateCountdown() {
+            const nextYear = new Date('January 1, 2026 00:00:00').getTime();
+            const now = new Date().getTime();
+            const diff = nextYear - now;
+
+            if (diff <= 0) {
+                document.querySelector('.countdown-wrapper').innerHTML = '<div style="font-size:1.8rem; color:white;">新年快乐！🎉</div>';
+                return;
+            }
+
+            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+            document.getElementById('days').innerText = String(d).padStart(2, '0');
+            document.getElementById('hours').innerText = String(h).padStart(2, '0');
+            document.getElementById('minutes').innerText = String(m).padStart(2, '0');
+            document.getElementById('seconds').innerText = String(s).padStart(2, '0');
+        }
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+        // 2. 背景与互动
+        const icons = ['🦄', '🎈', '🌸', '✨', '🌈', '🎀', '🍬', '🍭', '💖', '⭐', '☁️', '🍦'];
+        const layer = document.getElementById('decorLayer');
+        const items = [];
+
+        for (let i = 0; i < 25; i++) {
+            const el = document.createElement('div');
+            el.classList.add('floating-item');
+            el.innerText = icons[Math.floor(Math.random() * icons.length)];
+            const x = Math.random() * 100;
+            const y = Math.random() * 100;
+            const depth = Math.random();
+            const size = 15 + depth * 30;
+            
+            el.style.left = `${x}%`;
+            el.style.top = `${y}%`;
+            el.style.fontSize = `${size}px`;
+            el.style.opacity = 0.3 + depth * 0.5;
+            
+            const duration = 3 + Math.random() * 5;
+            el.style.animation = `floatAnim ${duration}s infinite ease-in-out alternate`;
+            
+            items.push({ el, depth, x, y });
+            layer.appendChild(el);
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            const mouseX = e.clientX / window.innerWidth;
+            const mouseY = e.clientY / window.innerHeight;
+
+            items.forEach(item => {
+                const moveX = (0.5 - mouseX) * 50 * item.depth;
+                const moveY = (0.5 - mouseY) * 50 * item.depth;
+                item.el.style.transform = `translate(${moveX}px, ${moveY}px)`;
+            });
+        });
+
+        // 点击依然保留彩带效果，但没有文字提示
+        document.addEventListener('click', (e) => {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: e.clientY / window.innerHeight, x: e.clientX / window.innerWidth },
+                colors: ['#ffafbd', '#ffc3a0', '#ffffff', '#ff9a9e'],
+                disableForReducedMotion: true
+            });
+            const card = document.getElementById('card');
+            card.style.transform = 'scale(0.98)';
+            setTimeout(() => card.style.transform = '', 100);
+        });
+
+        setTimeout(() => {
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+        }, 500);
+    </script>
+</body>
+</html>
